@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>廚餘大偵探：分類小高手！</title>
+  
+  <!-- Tailwind CSS CDN for styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Playful & Legible Chinese Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mochiy+Pop+P+One&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              green: '#10B981',
+              darkGreen: '#047857',
+              lightGreen: '#D1FAE5',
+              amber: '#F59E0B',
+              darkAmber: '#B45309',
+              lightAmber: '#FEF3C7',
+              sky: '#3B82F6',
+              softBg: '#F0FDF4'
+            }
+          },
+          fontFamily: {
+            sans: ['"Zen Maru Gothic"', '"PingFang TC"', '"Microsoft JhengHei"', 'sans-serif'],
+            display: ['"Mochiy Pop P One"', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbar & Prevent Selection on Touch Screens */
+    body {
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+      background: radial-gradient(circle at 50% 20%, #E6F4EA 0%, #C2E7DA 50%, #A2D5C6 100%);
+      font-family: 'Zen Maru Gothic', 'PingFang TC', sans-serif;
+    }
+
+    /* Bouncing & Floating Animations */
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-8px) rotate(1deg); }
+    }
+    
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
+      50% { box-shadow: 0 0 28px rgba(245, 158, 11, 0.8); }
+    }
+
+    @keyframes binBounce {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .animate-float {
+      animation: float 4s ease-in-out infinite;
+    }
+
+    .pulse-glow {
+      animation: pulseGlow 1.8s infinite;
+    }
+
+    .bin-active {
+      animation: binBounce 0.3s ease-out;
+    }
+
+    /* Drag Ghosting Styles */
+    .dragging {
+      opacity: 0.5;
+      transform: scale(0.95);
+    }
+
+    .drag-over {
+      transform: scale(1.03);
+      filter: brightness(1.08);
+    }
+
+    /* Glassmorphism Panels */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(12px);
+      border: 3px solid rgba(255, 255, 255, 0.8);
+      box-shadow: 0 12px 32px rgba(4, 120, 87, 0.12);
+    }
+
+    /* Speech Bubble Triangle */
+    .speech-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 12px 12px 0;
+      border-style: solid;
+      border-color: #ffffff transparent;
+      display: block;
+      width: 0;
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col justify-between overflow-x-hidden p-2 sm:p-4">
+
+  <!-- Top Navigation / Title Header -->
+  <header class="w-full max-w-4xl mx-auto flex justify-between items-center bg-white/80 backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-md border-2 border-emerald-300 z-10">
+    <div class="flex items-center gap-2">
+      <div class="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-xl shadow-inner">
+        🔍
+      </div>
+      <div>
+        <h1 class="text-base sm:text-xl font-black text-emerald-800 tracking-wide font-display">
+          廚餘大偵探：分類小高手！
+        </h1>
+        <p class="text-xs text-emerald-600 font-bold hidden sm:block">小學三年級 常識科 / 環保專題學習</p>
+      </div>
+    </div>
+
+    <!-- Audio & Voice Controls -->
+    <div class="flex items-center gap-2">
+      <button id="tts-toggle" onclick="toggleTTS()" class="px-3 py-1.5 rounded-xl bg-amber-100 border-2 border-amber-300 text-amber-800 font-bold text-xs sm:text-sm flex items-center gap-1 hover:bg-amber-200 transition">
+        <span id="tts-icon">🗣️</span> <span class="hidden md:inline">語音朗讀</span>
+      </button>
+      <button id="sound-toggle" onclick="toggleSound()" class="px-3 py-1.5 rounded-xl bg-emerald-100 border-2 border-emerald-300 text-emerald-800 font-bold text-xs sm:text-sm flex items-center gap-1 hover:bg-emerald-200 transition">
+        <span id="sound-icon">🔊</span> <span class="hidden md:inline">音效</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Canvas for Confetti Fireworks -->
+  <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-50"></canvas>
+
+  <!-- MAIN CONTAINER -->
+  <main class="w-full max-w-4xl mx-auto my-auto flex-grow flex flex-col justify-center items-center py-2 relative">
+
+    <!-- 1. START SCREEN VIEW -->
+    <section id="start-screen" class="w-full glass-card rounded-3xl p-6 sm:p-8 text-center max-w-2xl mx-auto my-auto animate-float">
+      <!-- Detective Mascot Badge -->
+      <div class="relative inline-block mb-3">
+        <div class="w-28 h-28 sm:w-36 sm:h-36 mx-auto bg-gradient-to-tr from-emerald-400 to-teal-200 rounded-full flex items-center justify-center border-4 border-white shadow-lg">
+          <svg class="w-20 h-20 sm:w-28 sm:h-28" viewBox="0 0 100 100">
+            <!-- Cute Bear Detective Head -->
+            <circle cx="20" cy="25" r="12" fill="#D97706" />
+            <circle cx="20" cy="25" r="6" fill="#FEF3C7" />
+            <circle cx="80" cy="25" r="12" fill="#D97706" />
+            <circle cx="80" cy="25" r="6" fill="#FEF3C7" />
+            <circle cx="50" cy="50" r="35" fill="#F59E0B" />
+            <circle cx="35" cy="45" r="5" fill="#1F2937" />
+            <circle cx="65" cy="45" r="5" fill="#1F2937" />
+            <ellipse cx="50" cy="58" rx="12" ry="8" fill="#FEF3C7" />
+            <polygon points="50,54 44,60 56,60" fill="#78350F" />
+            <!-- Detective Hat -->
+            <path d="M 20 32 Q 50 10 80 32 L 85 36 Q 50 28 15 36 Z" fill="#4B5563" />
+            <path d="M 30 28 C 30 15, 70 15, 70 28 Z" fill="#374151" />
+            <!-- Magnifying Glass -->
+            <circle cx="70" cy="65" r="12" fill="none" stroke="#2563EB" stroke-width="4" />
+            <line x1="78" y1="73" x2="90" y2="85" stroke="#1E40AF" stroke-width="5" stroke-linecap="round" />
+          </svg>
+        </div>
+        <span class="absolute -bottom-2 -right-2 bg-amber-400 text-amber-950 font-black px-3 py-1 rounded-full text-xs sm:text-sm border-2 border-white shadow">
+          P.3 專屬任務
+        </span>
+      </div>
+
+      <h2 class="text-2xl sm:text-3xl font-black text-emerald-900 mb-2 font-display">
+        歡迎來到廚餘大偵探事務所！
+      </h2>
+      <p class="text-sm sm:text-base text-slate-700 font-bold mb-4 leading-relaxed">
+        你知道嗎？廚餘分為兩種！<br class="hidden sm:inline">
+        請幫助偵探把食物殘渣正確分類到合適的垃圾桶吧！
+      </p>
+
+      <!-- Educational Quick Guide Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 text-left">
+        <div class="bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-3.5 flex items-start gap-3">
+          <div class="text-3xl">🍏</div>
+          <div>
+            <h3 class="font-black text-emerald-800 text-sm sm:text-base">可避免的廚餘</h3>
+            <p class="text-xs text-emerald-700 mt-0.5">原本是可以吃掉的食物，例如吃剩的飯菜、吐司、放過期的水果。</p>
+          </div>
+        </div>
+
+        <div class="bg-amber-50 border-2 border-amber-300 rounded-2xl p-3.5 flex items-start gap-3">
+          <div class="text-3xl">🍂</div>
+          <div>
+            <h3 class="font-black text-amber-900 text-sm sm:text-base">不可避免的廚餘</h3>
+            <p class="text-xs text-amber-800 mt-0.5">本來就不能吃的部位，例如骨頭、蛋殼、蟹殼、香蕉皮。</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Player Name Input Field -->
+      <div class="mb-6 max-w-sm mx-auto">
+        <label for="player-name-input" class="block text-xs font-bold text-slate-600 mb-1">請輸入小偵探姓名：</label>
+        <input type="text" id="player-name-input" placeholder="例如：張小明" value="惜食小偵探" 
+               class="w-full text-center px-4 py-2.5 rounded-xl border-2 border-emerald-400 font-bold text-emerald-900 focus:outline-none focus:ring-4 focus:ring-emerald-200 text-base shadow-sm">
+      </div>
+
+      <!-- Start Game Button -->
+      <button onclick="startGame()" class="w-full max-w-xs py-3.5 px-8 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black text-lg rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-200 border-2 border-emerald-300 flex items-center justify-center gap-2 mx-auto">
+        <span>🚀 接受任務，開始遊戲！</span>
+      </button>
+    </section>
+
+    <!-- 2. GAMEPLAY SCREEN VIEW (HIDDEN INITIALLY) -->
+    <section id="game-screen" class="w-full hidden flex-col items-center">
+      
+      <!-- Top Info Bar: Score, Progress, Combo -->
+      <div class="w-full glass-card rounded-2xl p-3 sm:p-4 mb-4 flex flex-wrap justify-between items-center gap-2 border-2 border-emerald-200">
+        
+        <!-- Score -->
+        <div class="flex items-center gap-1.5 bg-amber-100 px-3 py-1.5 rounded-xl border border-amber-300">
+          <span class="text-xl">⭐</span>
+          <span class="text-xs font-bold text-amber-800">得分：</span>
+          <span id="score-text" class="text-lg font-black text-amber-900 font-display">0</span>
+        </div>
+
+        <!-- Progress Tracker Bar -->
+        <div class="flex-1 min-w-[160px] mx-2">
+          <div class="flex justify-between text-xs font-black text-emerald-800 mb-1">
+            <span>進度</span>
+            <span id="progress-text">1 / 10</span>
+          </div>
+          <div class="w-full bg-slate-200 h-3.5 rounded-full overflow-hidden border border-slate-300">
+            <div id="progress-bar-inner" class="bg-gradient-to-r from-emerald-400 to-teal-500 h-full w-10% transition-all duration-300"></div>
+          </div>
+        </div>
+
+        <!-- Combo Counter -->
+        <div class="flex items-center gap-1 bg-emerald-100 px-3 py-1.5 rounded-xl border border-emerald-300">
+          <span class="text-lg">🔥</span>
+          <span id="combo-text" class="text-xs font-black text-emerald-800">連擊 x0</span>
+        </div>
+      </div>
+
+      <!-- Instruction Tip Banner -->
+      <div class="text-center mb-3 text-xs sm:text-sm font-bold text-slate-700 bg-white/70 px-4 py-1.5 rounded-full border border-emerald-200 shadow-sm">
+        💡 提示：按住卡片拖至下方垃圾桶，或「點擊卡片再點擊垃圾桶」！
+      </div>
+
+      <!-- CURRENT ITEM CARD AREA -->
+      <div id="card-drop-zone" class="w-full max-w-sm mb-6 flex justify-center">
+        <!-- Draggable Card -->
+        <div id="food-card" 
+             draggable="true" 
+             class="w-full glass-card rounded-3xl p-5 text-center cursor-grab active:cursor-grabbing hover:shadow-2xl transition-all duration-200 border-4 border-amber-300 relative pulse-glow">
+          
+          <div id="card-badge" class="absolute -top-3 right-4 bg-amber-400 text-amber-950 text-xs font-black px-3 py-1 rounded-full shadow">
+            待分類廚餘
+          </div>
+
+          <!-- SVG Visual Display Container -->
+          <div id="food-svg-container" class="w-36 h-36 mx-auto my-2 flex items-center justify-center bg-emerald-50/50 rounded-2xl p-2 border border-emerald-100 shadow-inner">
+            <!-- Dynamic SVG Injected via JS -->
+          </div>
+
+          <h3 id="food-title" class="text-xl font-black text-slate-800 font-display mt-1">
+            載入中...
+          </h3>
+          <p id="food-desc" class="text-xs font-bold text-slate-500 mt-0.5">
+            描述載入中
+          </p>
+        </div>
+      </div>
+
+      <!-- TARGET TRASH BINS CONTAINER -->
+      <div class="w-full grid grid-cols-2 gap-3 sm:gap-6 max-w-2xl">
+        
+        <!-- BIN 1: 可避免的廚餘 (Avoidable Food Waste) -->
+        <div id="bin-avoidable" 
+             onclick="handleBinClick('avoidable')"
+             ondragover="handleDragOver(event)"
+             ondragleave="handleDragLeave(event)"
+             ondrop="handleDrop(event, 'avoidable')"
+             class="group cursor-pointer bg-gradient-to-b from-emerald-100 to-emerald-200 border-4 border-emerald-500 rounded-3xl p-3 sm:p-5 text-center shadow-lg hover:shadow-2xl transition-all duration-200 flex flex-col items-center justify-between min-h-[180px] sm:min-h-[220px]">
+          
+          <!-- Bin Header Icon -->
+          <div class="w-14 h-14 sm:w-20 sm:h-20 bg-emerald-500 rounded-full flex items-center justify-center text-3xl sm:text-4xl text-white shadow-md group-hover:scale-110 transition-transform">
+            🍏
+          </div>
+
+          <div>
+            <h4 class="text-base sm:text-xl font-black text-emerald-900 font-display mt-2">
+              可避免的廚餘
+            </h4>
+            <p class="text-xs sm:text-sm font-bold text-emerald-800 mt-1">
+              原本可以吃掉的食物
+            </p>
+          </div>
+
+          <div class="mt-2 w-full py-1.5 bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-inner group-hover:bg-emerald-700 transition">
+            投進這個桶 📥
+          </div>
+        </div>
+
+        <!-- BIN 2: 不可避免的廚餘 (Unavoidable Food Waste) -->
+        <div id="bin-unavoidable" 
+             onclick="handleBinClick('unavoidable')"
+             ondragover="handleDragOver(event)"
+             ondragleave="handleDragLeave(event)"
+             ondrop="handleDrop(event, 'unavoidable')"
+             class="group cursor-pointer bg-gradient-to-b from-amber-100 to-amber-200 border-4 border-amber-600 rounded-3xl p-3 sm:p-5 text-center shadow-lg hover:shadow-2xl transition-all duration-200 flex flex-col items-center justify-between min-h-[180px] sm:min-h-[220px]">
+          
+          <!-- Bin Header Icon -->
+          <div class="w-14 h-14 sm:w-20 sm:h-20 bg-amber-600 rounded-full flex items-center justify-center text-3xl sm:text-4xl text-white shadow-md group-hover:scale-110 transition-transform">
+            🍂
+          </div>
+
+          <div>
+            <h4 class="text-base sm:text-xl font-black text-amber-950 font-display mt-2">
+              不可避免的廚餘
+            </h4>
+            <p class="text-xs sm:text-sm font-bold text-amber-900 mt-1">
+              本來就不能吃的部位
+            </p>
+          </div>
+
+          <div class="mt-2 w-full py-1.5 bg-amber-700 text-white font-bold text-xs rounded-xl shadow-inner group-hover:bg-amber-800 transition">
+            投進這個桶 📥
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- 3. EDUCATIONAL FEEDBACK POPUP MODAL -->
+    <div id="feedback-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4">
+      <div class="glass-card max-w-lg w-full rounded-3xl p-6 text-center border-4 border-emerald-300 relative animate-float shadow-2xl">
+        
+        <!-- Result Icon Badge -->
+        <div id="modal-result-badge" class="w-20 h-20 mx-auto -mt-14 rounded-full border-4 border-white shadow-lg flex items-center justify-center text-4xl bg-emerald-500 text-white">
+          🎉
+        </div>
+
+        <h3 id="modal-result-title" class="text-2xl font-black font-display text-emerald-900 mt-3 mb-1">
+          回答正確！
+        </h3>
+
+        <!-- Food Item Card Recap -->
+        <div class="bg-emerald-50/80 rounded-2xl p-3 my-3 flex items-center gap-3 border border-emerald-200">
+          <div id="modal-svg-container" class="w-16 h-16 bg-white rounded-xl p-1 flex-shrink-0 border"></div>
+          <div class="text-left">
+            <div id="modal-item-name" class="font-black text-base text-slate-800">蘋果皮</div>
+            <div id="modal-item-category" class="inline-block text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-800 mt-0.5">
+              可避免的廚餘
+            </div>
+          </div>
+        </div>
+
+        <!-- Explanation Text Box -->
+        <div class="bg-white/90 rounded-2xl p-4 border border-slate-200 text-left mb-5 shadow-inner">
+          <h4 class="text-xs font-black text-emerald-700 mb-1 flex items-center gap-1">
+            <span>💡 偵探解說筆記：</span>
+          </h4>
+          <p id="modal-explanation-text" class="text-sm text-slate-700 font-bold leading-relaxed">
+            蘋果肉原本是可以美味食用的食物！因為過期或剩餘而丟棄屬於「可避免的廚餘」。我們要珍惜食物喔！
+          </p>
+        </div>
+
+        <!-- Next Button -->
+        <button onclick="nextQuestion()" class="w-full py-3.5 px-6 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black text-lg rounded-2xl shadow-lg hover:brightness-110 active:scale-95 transition flex items-center justify-center gap-2">
+          <span>下一題 ➔</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 4. REWARD SUMMARY & CERTIFICATE SCREEN (HIDDEN INITIALLY) -->
+    <section id="summary-screen" class="w-full glass-card rounded-3xl p-5 sm:p-8 text-center max-w-2xl mx-auto hidden border-4 border-amber-300 my-auto">
+      
+      <div class="text-4xl mb-1">🏆</div>
+      <h2 class="text-2xl sm:text-3xl font-black text-emerald-900 font-display mb-1">
+        任務完成！恭喜通關！
+      </h2>
+      <p class="text-xs sm:text-sm text-slate-600 font-bold mb-4">
+        你已經成為合格的廚餘分類小高手！
+      </p>
+
+      <!-- 3-Star Rating Display -->
+      <div id="star-rating" class="flex justify-center gap-2 text-4xl sm:text-5xl mb-4">
+        <span class="text-amber-400">⭐</span>
+        <span class="text-amber-400">⭐</span>
+        <span class="text-amber-400">⭐</span>
+      </div>
+
+      <!-- CERTIFICATE BOX (惜食小先鋒證書) -->
+      <div class="bg-gradient-to-b from-amber-50 to-orange-50 border-4 border-dashed border-amber-400 rounded-3xl p-5 text-left relative shadow-inner mb-6">
+        
+        <!-- Official Badge Seal -->
+        <div class="absolute top-4 right-4 w-16 h-16 bg-amber-400 rounded-full border-2 border-white shadow-md flex items-center justify-center text-amber-950 font-black text-xs text-center leading-tight rotate-12">
+          惜食小先鋒<br>認證印章
+        </div>
+
+        <h3 class="text-lg sm:text-xl font-black text-amber-900 border-b-2 border-amber-200 pb-2 mb-3 font-display">
+          📜 惜食小先鋒榮譽證書
+        </h3>
+
+        <p class="text-sm font-bold text-slate-700 leading-relaxed">
+          茲證明小偵探 <span id="cert-player-name" class="text-emerald-800 text-lg font-black border-b-2 border-emerald-500 px-2">張小明</span> ：
+        </p>
+        <p class="text-xs sm:text-sm text-slate-600 font-bold mt-2 leading-relaxed">
+          順利通過「廚餘大偵探」考驗，成功掌握廚餘分類知識，展現了優異的環保意識與珍惜食物的精神！
+        </p>
+
+        <!-- Stats Breakdown -->
+        <div class="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-amber-200 text-center">
+          <div class="bg-white/80 p-2 rounded-xl border border-amber-200">
+            <div class="text-xs text-slate-500 font-bold">總得分</div>
+            <div id="cert-score" class="text-base sm:text-lg font-black text-amber-800">1000</div>
+          </div>
+          <div class="bg-white/80 p-2 rounded-xl border border-amber-200">
+            <div class="text-xs text-slate-500 font-bold">答對題數</div>
+            <div id="cert-correct" class="text-base sm:text-lg font-black text-emerald-800">10 / 10</div>
+          </div>
+          <div class="bg-white/80 p-2 rounded-xl border border-amber-200">
+            <div class="text-xs text-slate-500 font-bold">最高連擊</div>
+            <div id="cert-streak" class="text-base sm:text-lg font-black text-sky-800">10</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GREEN TIPS SECTION (減廢小錦囊) -->
+      <div class="bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-4 text-left mb-6">
+        <h4 class="font-black text-emerald-900 text-sm mb-2 flex items-center gap-1">
+          <span>🌱 減廢小錦囊：日常惜食好習慣</span>
+        </h4>
+        <ul class="text-xs sm:text-sm font-bold text-emerald-800 space-y-1.5 list-disc pl-5">
+          <li><strong>按量點餐：</strong> 外出用餐或盛飯時「吃多少，點多少」，不貪多。</li>
+          <li><strong>愛惜糧食：</strong> 不挑食、不偏食，把碗裡的飯菜吃乾淨。</li>
+          <li><strong>留意期限：</strong> 買食物時注意有效日期，先進先出不放壞。</li>
+          <li><strong>有機資源：</strong> 把不可避免的廚餘放入堆肥桶，變廢為寶！</li>
+        </ul>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <button onclick="readCertificateAloud()" class="py-3 px-6 bg-amber-500 text-amber-950 font-black rounded-2xl shadow hover:bg-amber-400 transition flex items-center justify-center gap-1">
+          🔊 朗讀證書內容
+        </button>
+        <button onclick="restartGame()" class="py-3 px-8 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black text-lg rounded-2xl shadow-lg hover:brightness-110 active:scale-95 transition">
+          🔄 再玩一次
+        </button>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="w-full max-w-4xl mx-auto text-center py-2 text-xs font-bold text-emerald-900/70">
+    小學三年級 環保專題學習互動遊戲 ‧ 愛護地球 惜食減廢
+  </footer>
+
+  <script>
+    /* GAME STATE MANAGEMENT */
+    let soundEnabled = true;
+    let ttsEnabled = false;
+    let playerName = "惜食小偵探";
+    
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let streak = 0;
+    let maxStreak = 0;
+    let correctCount = 0;
+    
+    let selectedCard = null; // For tap interaction
+    let currentGameDeck = [];
+
+    /* WEB AUDIO API SOUND SYNTHESIZER (No External Files Required) */
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new AudioContext();
+      }
+    }
+
+    function playSynthTone(freq, type, duration, delay = 0) {
+      if (!soundEnabled) return;
+      initAudio();
+      setTimeout(() => {
+        try {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+          
+          gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+          
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          
+          osc.start();
+          osc.stop(audioCtx.currentTime + duration);
+        } catch (e) {
+          console.log("Audio play error:", e);
+        }
+      }, delay);
+    }
+
+    function playCorrectSound() {
+      playSynthTone(523.25, 'sine', 0.15, 0);     // C5
+      playSynthTone(659.25, 'sine', 0.15, 100);   // E5
+      playSynthTone(783.99, 'triangle', 0.2, 200); // G5
+      playSynthTone(1046.50, 'triangle', 0.35, 300); // C6
+    }
+
+    function playIncorrectSound() {
+      playSynthTone(300, 'sawtooth', 0.2, 0);
+      playSynthTone(220, 'sawtooth', 0.3, 150);
+    }
+
+    function playVictorySound() {
+      const notes = [523.25, 659.25, 783.99, 1046.50, 880, 1046.50];
+      notes.forEach((freq, idx) => {
+        playSynthTone(freq, 'triangle', 0.25, idx * 120);
+      });
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      document.getElementById('sound-icon').innerText = soundEnabled ? '🔊' : '🔇';
+    }
+
+    function toggleTTS() {
+      ttsEnabled = !ttsEnabled;
+      document.getElementById('tts-icon').innerText = ttsEnabled ? '🗣️' : '🔇';
+      if (ttsEnabled) {
+        speakText("已開啟語音朗讀輔助");
+      }
+    }
+
+    function speakText(text) {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'zh-HK'; // Traditional Chinese / Cantonese or Mandarin default
+      utterance.rate = 0.95;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    /* FOOD ITEMS DATABASE WITH INLINE VECTOR SVGs */
+    const ALL_FOOD_ITEMS = [
+      // 1. 剩飯
+      {
+        id: 'leftover-rice',
+        title: '剩飯',
+        desc: '沒吃完的大半碗白飯',
+        category: 'avoidable',
+        categoryName: '可避免的廚餘',
+        explanation: '白飯是由農夫辛勤種植的稻米煮成的，原本可以直接食用。因為點太多或吃不完浪費掉，屬於「可避免的廚餘」。記得吃多少盛多少喔！',
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full">
+          <!-- Bowl -->
+          <ellipse cx="50" cy="70" rx="35" ry="12" fill="#CBD5E1"/>
+          <path d="M 15 50 Q 50 100 85 50 Z" fill="#EF4444"/>
+          <ellipse cx="50" cy="50" rx="35" ry="12" fill="#DC2626"/>
+          <!-- Rice mound -->
+          <ellipse cx="50" cy="48" rx="31" ry="16" fill="#FFFFFF"/>
+          <circle cx="38" cy="42" r="6" fill="#F8FAFC"/>
+          <circle cx="50" cy="38" r="8" fill="#FFFFFF"/>
+          <circle cx="62" cy="42" r="6" fill="#F8FAFC"/>
+          <!-- Chopsticks -->
+          <line x1="20" y1="25" x2="70" y2="65" stroke="#78350F" stroke-width="4" stroke-linecap="round"/>
+          <line x1="25" y1="20" x2="75" y2="60" stroke="#78350F" stroke-width="4" stroke-linecap="round"/>
+        </svg>`
+      },
+      // 2. 咬了一口的蘋果
+      {
+        id: 'bitten-apple',
+        title: '咬了一口的蘋果',
+        desc: '放久了沒吃完的紅蘋果',
+        category: 'avoidable',
+        categoryName: '可避免的廚餘',
+        explanation: '蘋果肉富含維生素又甜美，原本完全是可以吃的！因為挑食或放壞了丟掉，屬於「可避免的廚餘」。',
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full">
+          <!-- Stem and Leaf -->
+          <path d="M 50 25 Q 55 10 60 15" stroke="#78350F" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <path d="M 52 20 Q 70 10 65 25 Z" fill="#10B981"/>
+          <!-- Apple Body -->
+          <path d="M 50 30 C 20 20, 10 60, 30 85 C 45 95, 50 85, 50 85 C 50 85, 55 95, 70 85 C 90 60, 80 20, 50 30 Z" fill="#EF4444"/>
+          <!-- Bite Mark -->
+          <circle cx="75" cy="50" r="14" fill="#F0FDF4"/>
+          <circle cx="70" cy="40" r="10" fill="#F0FDF4"/>
+          <circle cx="70" cy="60" r="10" fill="#F0FDF4"/>
+        </svg>`
+      },
+      // 3. 剩吐司
+      {
+        id: 'leftover-toast',
+        title: '剩吐司麵包',
+        desc: '早餐沒吃完的吐司切片',
+        category: 'avoidable',
+        categoryName: '可避免的廚餘',
+        explanation: '吐司是用麵粉精心烘焙的美味食物。吃剩的吐司屬於「可避免的廚餘」，我們可以做成香脆的烤吐司丁喔！',
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full">
+          <!-- Toast Crust -->
+          <path d="M 25 30 Q 50 20 75 30 L 80 80 Q 50 85 20 80 Z" fill="#B45309"/>
+          <!-- Toast Inner -->
+          <path d="M 28 34 Q 50 25 72 34 L 76 76 Q 50 80 24 76 Z" fill="#FEF3C7"/>
+          <!-- Strawberry Jam -->
+          <path d="M 35 45 Q 55 40 65 55 Q 45 70 35 45 Z" fill="#F43F5E"/>
+        </svg>`
+      },
+      // 4. 吃剩的披薩
+      {
+        id: 'leftover-pizza',
+        title: '吃剩的披薩',
+        desc: '派對吃剩的一角披薩',
+        category: 'avoidable',
+        categoryName: '可避免的廚餘',
+        explanation: '披薩餅皮與起司配料都是美味的食材。點餐過多吃不完造成的浪費，屬於「可避免的廚餘」。剩餘披薩可以冷藏下一餐加熱再吃！',
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full">
+          <!-- Crust -->
+          <path d="M 20 25 Q 50 15 80 25 L 50 90 Z" fill="#D97706"/>
+          <!-- Cheese Surface -->
+          <path d="M 24 30 Q 50 22 76 30 L 50 82 Z" fill="#FBBF24"/>
+          <!-- Pepperoni -->
+          <circle cx="40" cy="40" r="7" fill="#DC2626"/>
+          <circle cx="60" cy="45" r="8" fill="#DC2626"/>
+          <circle cx="50" cy="62" r="6" fill="#DC2626"/>
+        </svg>`
+      },
+      // 5. 未喝完的牛奶
+      {
+        id: 'leftover-milk',
+        title: '未喝完的牛奶盒',
+        desc: '盒裡還剩餘一半的牛奶',
+        category: 'avoidable',
+        categoryName: '可避免的廚餘',
+        explanation: '牛奶包含豐富的鈣質與營養，原本是可以喝掉的。倒太多喝不完倒掉屬於「可避免的廚餘」。',
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full">
+          <!-- Milk Carton Body -->
+          <path d="M 30 35 L 70 35 L 75 85 L 25 85 Z" fill="#60A5FA"/>
+          <path d="M 30 35 L 50 15 L 70 35 Z" fill="#93C5FD"/>
+          <!-- Straw -->
+          <line x1="55" y1="10" x2="68" y2="30" stroke="#EF4444" stroke-width="5" stroke-linecap="round"/>
+          <!-- Label -->
+          <rect x="35" y="50" width="30" height="20" rx="4" fill="#FFFFFF"/>
+          <text x="50" y="64" font-size="10" font-weight="bold" fill="#1E40AF" text-anchor="middle">MILK</text>
+        </svg>`
+      },
+      // 6. 放過期的蛋糕
+      {
+        id: 'expired-cake',
+        title: '過期的草莓蛋糕',
+        desc: '忘記吃而放壞的蛋糕',
+        category: 'avoidable',
+        categoryName: '可避免的廚餘',
+        explanation: '蛋糕是美味的點心！因為忘記吃而放過期變質，屬於「可避免的廚餘」。買食物時要留意賞味期限喔！',
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full">
+          <!-- Cake Wedge -->
+          <path d="M 15 65 L 85 65 L 70 35 L 30 35 Z" fill="#FBCFE8"/>
+          <path d="M 15 65 L 50 88 L 85 65 Z" fill="#F472B6"/>
+          <!-- Cream Top -->
+          <ellipse cx="50" cy="35" rx="20" ry="8" fill="#FFFFFF"/>
+          <!-- Cherry -->
+          <circle cx="50" cy="26" r="7" fill="#E11D48"/>
+          <!-- Expiry Tag -->
+          <rect x="25" y="72" width="50" height="12" rx="3" fill="#1E2937"/>
+          <text x="50" y="81" font-size="8" font-weight="bold" fill="#FCA5A5" text-anchor="middle">EXPIRED</text>
+        </svg>`
+      },
+      // 7. 香蕉皮
+      {
+        id: 'banana-peel',
+        title: '香蕉皮',
+        desc: '吃完香蕉後留下的果皮',
+        category: 'unavoidable',
+        categoryName: '不可避免的廚餘',
+        explanation: '香蕉皮是果實的保護外殼，人類腸胃無法消化吸收，屬於「不可避免的廚餘」。它可以拿去堆肥變成植物養分！',
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full">
+          <!-- Banana Peels spreading -->
+          <path d="M 50 30 Q 30 40 15 75 Q 35 70 50 50 Z" fill="#FBBF24"/>
+          <path d="M 50 30 Q 70 40 85 75 Q 65 70 50 50 Z" fill="#FBBF24"/>
+          <path d="M 50 30 Q 50 60 45 90 Q 55 85 50 50 Z" fill="#F59E0B"/>
+          <!-- Top Stem -->
+          <rect x="46" y="20" width="8" height="12" rx="3" fill="#78350F"/>
+        </svg>`
+      },
+      // 8. 雞骨頭
+      {
+        id: 'chicken-bone',
+        title: '雞骨頭',
+        desc: '吃完吃炸雞剩下的骨頭',
+        category: 'unavoidable',
+        categoryName: '不可避免的廚餘',
+        explanation: '雞骨頭堅硬無法被人體消化，是在啃食肉類後必然產生的殘渣，屬於「不可避免的廚餘」。',
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full">
+          <!-- Bone center -->
+          <rect x="30" y="44" width="40" height="12" rx="4" fill="#E2E8F0" transform="rotate(-15 50 50)"/>
+          <!-- Bone Knuckles Left -->
+          <circle cx="26" cy="38" r="9" fill="#F1F5F9"/>
+          <circle cx="26" cy="52" r="9" fill="#CBD5E1"/>
+          <!-- Bone Knuckles Right -->
+          <circle cx="74" cy="48" r="9" fill="#F1F5F9"/>
+          <circle cx="74" cy="62" r="9" fill="#CBD5E1"/>
+        </svg>`
+      },
+      // 9. 蛋殼
+      {
+        id: 'eggshell',
+        title: '蛋殼',
+        desc: '做菜打蛋留下的硬蛋殼',
+        category: 'unavoidable',
+        categoryName: '不可避免的廚餘',
+        explanation: '蛋殼是保護蛋黃蛋清的硬殼，不能食用，屬於「不可避免的廚餘」。搗碎後可以當作植物的天然鈣肥！',
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full">
+          <!-- Left Egg Half -->
+          <path d="M 20 60 C 15 35, 35 25, 45 40 L 40 48 L 32 42 L 25 55 Z" fill="#FEF3C7" stroke="#F59E0B" stroke-width="2"/>
+          <!-- Right Egg Half -->
+          <path d="M 55 65 C 50 85, 80 85, 85 60 L 75 55 L 70 65 L 62 55 Z" fill="#FED7AA" stroke="#EA580C" stroke-width="2"/>
+        </svg>`
+      },
+      // 10. 蟹殼
+      {
+        id: 'crab-shell',
+        title: '蟹殼與蝦殼',
+        desc: '享用海鮮留下的硬外殼',
+        category: 'unavoidable',
+        categoryName: '不可避免的廚餘',
+        explanation: '蟹殼與蝦殼質地堅硬，無法被人體食用，屬於「不可避免的廚餘」。加工後可以做成海洋生態肥料！',
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full">
+          <!-- Main Shell -->
+          <ellipse cx="50" cy="55" rx="30" ry="20" fill="#EA580C"/>
+          <path d="M 25 50 Q 50 30 75 50 Q 50 45 25 50 Z" fill="#F97316"/>
+          <!-- Claws -->
+          <path d="M 20 40 Q 10 25 25 20 Q 30 30 20 40 Z" fill="#EA580C"/>
+          <path d="M 80 40 Q 90 25 75 20 Q 70 30 80 40 Z" fill="#EA580C"/>
+        </svg>`
+      },
+      // 11. 橙皮
+      {
+        id: 'orange-peel',
+        title: '橙皮 / 橘子皮',
+        desc: '剝開柑橘後留下的外皮',
+        category: 'unavoidable',
+        categoryName: '不可避免的廚餘',
+        explanation: '果皮是保護水果果肉的構造，生吃水果時通常會剝除，屬於「不可避免的廚餘」。橙皮還能用來做環保清潔劑呢！',
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full">
+          <!-- Curled Peels -->
+          <path d="M 25 60 C 15 35, 45 20, 60 35 C 75 50, 40 85, 25 60 Z" fill="#F97316"/>
+          <path d="M 32 55 C 25 38, 48 28, 58 40 Z" fill="#FFEDD5"/>
+          <!-- Citrus pores dots -->
+          <circle cx="30" cy="65" r="1.5" fill="#C2410C"/>
+          <circle cx="45" cy="72" r="1.5" fill="#C2410C"/>
+          <circle cx="55" cy="60" r="1.5" fill="#C2410C"/>
+        </svg>`
+      },
+      // 12. 泡過的茶包
+      {
+        id: 'used-teabag',
+        title: '泡過的茶包',
+        desc: '沖泡茶水後的茶葉殘渣包',
+        category: 'unavoidable',
+        categoryName: '不可避免的廚餘',
+        explanation: '茶包裡的茶渣經過沖泡後失去了風味且無法直接吞食，屬於「不可避免的廚餘」，曬乾後可用作植物堆肥或除臭！',
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full">
+          <!-- Tea Bag Body -->
+          <polygon points="30,35 70,35 80,80 20,80" fill="#FEF3C7" stroke="#D97706" stroke-width="2"/>
+          <!-- String & Tag -->
+          <path d="M 50 35 Q 50 15 70 20" stroke="#94A3B8" stroke-width="2" fill="none"/>
+          <rect x="65" y="15" width="14" height="12" rx="2" fill="#EF4444"/>
+          <!-- Wet Stain -->
+          <ellipse cx="50" cy="60" rx="18" ry="12" fill="#B45309" opacity="0.4"/>
+        </svg>`
+      }
+    ];
+
+    /* START GAME FUNCTION */
+    function startGame() {
+      const input = document.getElementById('player-name-input');
+      if (input && input.value.trim() !== '') {
+        playerName = input.value.trim();
+      }
+
+      // Shuffle Deck & Pick 10 items
+      currentGameDeck = [...ALL_FOOD_ITEMS].sort(() => Math.random() - 0.5).slice(0, 10);
+      
+      currentQuestionIndex = 0;
+      score = 0;
+      streak = 0;
+      maxStreak = 0;
+      correctCount = 0;
+
+      document.getElementById('start-screen').classList.add('hidden');
+      document.getElementById('summary-screen').classList.add('hidden');
+      document.getElementById('game-screen').classList.remove('hidden');
+      document.getElementById('game-screen').classList.add('flex');
+
+      updateUI();
+      loadCurrentQuestion();
+
+      if (ttsEnabled) {
+        speakText("遊戲開始！請協助偵探把廚餘分類到正確的垃圾桶吧！");
+      }
+    }
+
+    /* LOAD CURRENT QUESTION CARD */
+    function loadCurrentQuestion() {
+      if (currentQuestionIndex >= currentGameDeck.length) {
+        showSummaryScreen();
+        return;
+      }
+
+      selectedCard = null;
+      const item = currentGameDeck[currentQuestionIndex];
+
+      // Update Card Visuals
+      document.getElementById('food-title').innerText = item.title;
+      document.getElementById('food-desc').innerText = item.desc;
+      document.getElementById('food-svg-container').innerHTML = item.svg;
+
+      const card = document.getElementById('food-card');
+      card.classList.remove('ring-4', 'ring-amber-400', 'bg-amber-50');
+
+      // Setup Drag & Drop Event Listeners
+      card.ondragstart = (e) => {
+        e.dataTransfer.setData('text/plain', item.category);
+        card.classList.add('dragging');
+      };
+
+      card.ondragend = () => {
+        card.classList.remove('dragging');
+      };
+
+      // Enable Tap Selection for Tablets
+      card.onclick = () => {
+        selectedCard = item;
+        card.classList.add('ring-4', 'ring-amber-400', 'bg-amber-50');
+        playSynthTone(600, 'sine', 0.1);
+        if (ttsEnabled) {
+          speakText(item.title + "。請點擊合適的垃圾桶。");
+        }
+      };
+
+      if (ttsEnabled) {
+        speakText("第" + (currentQuestionIndex + 1) + "題：" + item.title);
+      }
+    }
+
+    /* TAP TO PLACE BIN CLICK HANDLER */
+    function handleBinClick(targetCategory) {
+      if (!selectedCard) {
+        // If card was not tapped first, default to current item
+        selectedCard = currentGameDeck[currentQuestionIndex];
+      }
+      processAnswer(targetCategory);
+    }
+
+    /* DRAG AND DROP HANDLERS */
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.currentTarget.classList.add('drag-over');
+    }
+
+    function handleDragLeave(e) {
+      e.currentTarget.classList.remove('drag-over');
+    }
+
+    function handleDrop(e, targetCategory) {
+      e.preventDefault();
+      e.currentTarget.classList.remove('drag-over');
+      processAnswer(targetCategory);
+    }
+
+    /* PROCESS ANSWER & VERIFICATION */
+    function processAnswer(userChoice) {
+      const currentItem = currentGameDeck[currentQuestionIndex];
+      const isCorrect = (userChoice === currentItem.category);
+
+      // Trigger Bin Bounce Animation
+      const targetBin = document.getElementById(userChoice === 'avoidable' ? 'bin-avoidable' : 'bin-unavoidable');
+      targetBin.classList.add('bin-active');
+      setTimeout(() => targetBin.classList.remove('bin-active'), 300);
+
+      if (isCorrect) {
+        playCorrectSound();
+        correctCount++;
+        streak++;
+        if (streak > maxStreak) maxStreak = streak;
+        score += 100 + (streak * 10);
+      } else {
+        playIncorrectSound();
+        streak = 0;
+      }
+
+      updateUI();
+      showFeedbackModal(isCorrect, currentItem);
+    }
+
+    /* UPDATE SCORE, PROGRESS, & COMBO UI */
+    function updateUI() {
+      document.getElementById('score-text').innerText = score;
+      document.getElementById('progress-text').innerText = `${currentQuestionIndex + 1} / ${currentGameDeck.length}`;
+      document.getElementById('combo-text').innerText = `連擊 x${streak}`;
+
+      const progressPercent = ((currentQuestionIndex + 1) / currentGameDeck.length) * 100;
+      document.getElementById('progress-bar-inner').style.width = `${progressPercent}%`;
+    }
+
+    /* SHOW EDUCATIONAL FEEDBACK POPUP MODAL */
+    function showFeedbackModal(isCorrect, item) {
+      const modal = document.getElementById('feedback-modal');
+      const badge = document.getElementById('modal-result-badge');
+      const title = document.getElementById('modal-result-title');
+      
+      if (isCorrect) {
+        badge.className = "w-20 h-20 mx-auto -mt-14 rounded-full border-4 border-white shadow-lg flex items-center justify-center text-4xl bg-emerald-500 text-white";
+        badge.innerText = "🎉";
+        title.className = "text-2xl font-black font-display text-emerald-900 mt-3 mb-1";
+        title.innerText = "答對了！太棒了！";
+      } else {
+        badge.className = "w-20 h-20 mx-auto -mt-14 rounded-full border-4 border-white shadow-lg flex items-center justify-center text-4xl bg-amber-500 text-white";
+        badge.innerText = "💡";
+        title.className = "text-2xl font-black font-display text-amber-900 mt-3 mb-1";
+        title.innerText = "再接再厲！看解答學知識：";
+      }
+
+      document.getElementById('modal-svg-container').innerHTML = item.svg;
+      document.getElementById('modal-item-name').innerText = item.title;
+      
+      const categoryTag = document.getElementById('modal-item-category');
+      categoryTag.innerText = item.categoryName;
+      categoryTag.className = item.category === 'avoidable' 
+        ? "inline-block text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-200 text-emerald-800 mt-0.5"
+        : "inline-block text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-200 text-amber-900 mt-0.5";
+
+      document.getElementById('modal-explanation-text').innerText = item.explanation;
+
+      modal.classList.remove('hidden');
+
+      if (ttsEnabled) {
+        const speechMsg = (isCorrect ? "答對了！" : "注意囉！") + item.title + "屬於" + item.categoryName + "。" + item.explanation;
+        speakText(speechMsg);
+      }
+    }
+
+    /* NEXT QUESTION BUTTON */
+    function nextQuestion() {
+      document.getElementById('feedback-modal').classList.add('hidden');
+      currentQuestionIndex++;
+      loadCurrentQuestion();
+    }
+
+    /* SHOW SUMMARY & CERTIFICATE SCREEN */
+    function showSummaryScreen() {
+      document.getElementById('game-screen').classList.add('hidden');
+      document.getElementById('summary-screen').classList.remove('hidden');
+
+      playVictorySound();
+      launchConfetti();
+
+      // Certificate Info
+      document.getElementById('cert-player-name').innerText = playerName;
+      document.getElementById('cert-score').innerText = score;
+      document.getElementById('cert-correct').innerText = `${correctCount} / ${currentGameDeck.length}`;
+      document.getElementById('cert-streak').innerText = maxStreak;
+
+      // Calculate Stars
+      const starContainer = document.getElementById('star-rating');
+      if (correctCount >= 9) {
+        starContainer.innerHTML = '<span class="text-amber-400">⭐</span><span class="text-amber-400">⭐</span><span class="text-amber-400">⭐</span>';
+      } else if (correctCount >= 6) {
+        starContainer.innerHTML = '<span class="text-amber-400">⭐</span><span class="text-amber-400">⭐</span><span class="text-slate-300">⭐</span>';
+      } else {
+        starContainer.innerHTML = '<span class="text-amber-400">⭐</span><span class="text-slate-300">⭐</span><span class="text-slate-300">⭐</span>';
+      }
+
+      if (ttsEnabled) {
+        speakText(`恭喜${playerName}通關！你獲得了${score}分！成功成為合格的惜食小先鋒！`);
+      }
+    }
+
+    function readCertificateAloud() {
+      const text = `茲證明小偵探${playerName}，順利通過廚餘大偵探考驗，獲得${score}分，獲封惜食小先鋒！`;
+      speakText(text);
+    }
+
+    function restartGame() {
+      document.getElementById('summary-screen').classList.add('hidden');
+      document.getElementById('start-screen').classList.remove('hidden');
+    }
+
+    /* CANVASES CONFETTI ENGINE (Zero External Dependencies) */
+    function launchConfetti() {
+      const canvas = document.getElementById('confetti-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const particles = [];
+      const colors = ['#10B981', '#F59E0B', '#3B82F6', '#EC4899', '#8B5CF6', '#10B981'];
+
+      for (let i = 0; i < 100; i++) {
+        particles.push({
+          x: canvas.width / 2,
+          y: canvas.height / 3,
+          vx: (Math.random() - 0.5) * 14,
+          vy: (Math.random() - 0.8) * 14,
+          size: Math.random() * 8 + 6,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rotation: Math.random() * 360,
+          rSpeed: (Math.random() - 0.5) * 8,
+          gravity: 0.25,
+          opacity: 1
+        });
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let stillActive = false;
+
+        particles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += p.gravity;
+          p.rotation += p.rSpeed;
+          p.opacity -= 0.008;
+
+          if (p.opacity > 0) {
+            stillActive = true;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate((p.rotation * Math.PI) / 180);
+            ctx.globalAlpha = Math.max(0, p.opacity);
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+            ctx.restore();
+          }
+        });
+
+        if (stillActive) {
+          requestAnimationFrame(render);
+        }
+      }
+
+      render();
+    }
+  </script>
+</body>
+</html>
